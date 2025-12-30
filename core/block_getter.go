@@ -8,8 +8,8 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 )
 
-func GetBlock() (*types.Block, error) {
-	client, err := ethclient.Dial("https://mainnet.infura.io/v3/")
+func GetBlock(url string) (*types.Block, error) {
+	client, err := ethclient.Dial(url)
 	if err != nil {
 		return nil, err
 	}
