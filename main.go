@@ -17,11 +17,12 @@ import (
 
 func main() {
 	flag.Usage = func() {
+		fmt.Fprintln(flag.CommandLine.Output(), "ethClassify - clasificador de transacciones de Ethereum")
 		fmt.Fprintf(flag.CommandLine.Output(), "Uso: %s -url <rpc-url> [opciones]\n", os.Args[0])
 		fmt.Fprintln(flag.CommandLine.Output(), "Clasifica el ultimo bloque de Ethereum mainnet usando el endpoint RPC indicado.")
 		fmt.Fprintln(flag.CommandLine.Output(), "\nOpciones:")
-		fmt.Fprintln(flag.CommandLine.Output(), "\t-url <rpc-url>\tRPC URL raw link")
-		fmt.Fprintln(flag.CommandLine.Output(), "\t-with-logs\tUse transaction receipts/logs for ERC-type classification (several extra RPC calls)")
+		fmt.Fprintln(flag.CommandLine.Output(), "\t-url <rpc-url>\tRPC URL")
+		fmt.Fprintln(flag.CommandLine.Output(), "\t-with-logs\tUsa logs para clasificar transacciones ERC (hace más llamadas RPC!!)")
 		flag.PrintDefaults()
 		fmt.Fprintf(flag.CommandLine.Output(), "\nEjemplo:\n  %s -url https://mainnet.infura.io/v3/<project-id> -with-logs", os.Args[0])
 	}
