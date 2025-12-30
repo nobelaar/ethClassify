@@ -5,18 +5,24 @@ import (
 
 	"encoding/hex"
 
+	"ethClassify/utils"
+
 	"github.com/ethereum/go-ethereum/core/types"
 )
 
 func Classify(tx *types.Transaction) (string, error) {
+	to := tx.To()
 	fmt.Println()
-
 	fmt.Println("Tx Hash: ", tx.Hash())
-	fmt.Println("Tx To: ", ClassifyAddr(tx.To()))
-	fmt.Println("Tx Value: ", tx.Value())
+	if to == nil {
+		fmt.Println("Tx To: CONTRACT_CREATION")
+	} else {
+		fmt.Println("Tx To: ", ClassifyAddr(to))
+	}
+	fmt.Printf("Tx Value: %s (%s ETH)\n", tx.Value(), utils.WeiToEtherString(tx.Value()))
 	fmt.Println("Tx Data: ", hex.EncodeToString(tx.Data()))
 	// contrato nuevo
-	if tx.To() == nil {
+	if to == nil {
 		return "DEPLOY", nil
 	}
 	// transferencia
