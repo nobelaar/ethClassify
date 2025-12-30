@@ -3,7 +3,9 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
 	"log"
+	"os"
 
 	"ethClassify/internal/domain"
 	"ethClassify/internal/infrastructure/classifier"
@@ -14,11 +16,28 @@ import (
 )
 
 func main() {
+	flag.Usage = func() {
+		fmt.Fprintf(flag.CommandLine.Output(), "Uso: %s -url <rpc-url> [opciones]\n", os.Args[0])
+		fmt.Fprintln(flag.CommandLine.Output(), "Clasifica el ultimo bloque de Ethereum mainnet usando el endpoint RPC indicado.")
+		fmt.Fprintln(flag.CommandLine.Output(), "\nOpciones:")
+		fmt.Fprintln(flag.CommandLine.Output(), "\t-url <rpc-url>\tRPC URL raw link")
+		fmt.Fprintln(flag.CommandLine.Output(), "\t-with-logs\tUse transaction receipts/logs for ERC-type classification (several extra RPC calls)")
+		flag.PrintDefaults()
+		fmt.Fprintf(flag.CommandLine.Output(), "\nEjemplo:\n  %s -url https://mainnet.infura.io/v3/<project-id> -with-logs", os.Args[0])
+	}
+
+	if len(os.Args) == 1 {
+		flag.Usage()
+		return
+	}
+
 	url := flag.String("url", "", "rpc url raw link")
 	withLogs := flag.Bool("with-logs", false, "use transaction receipts/logs for ERC-type classification (extra RPC calls)")
 	flag.Parse()
 	if *url == "" {
-		log.Fatal("rpc-url is required")
+		fmt.Fprintln(flag.CommandLine.Output(), "error: -url is required")
+		flag.Usage()
+		os.Exit(2)
 	}
 
 	reader, err := ethereum.NewBlockReader(*url, *withLogs)

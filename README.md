@@ -1,44 +1,40 @@
 # ethClassify
 
-Herramienta en Go que obtiene el ultimo bloque de Ethereum mainnet via Infura y clasifica cada transaccion. Imprime hash, destino anotado, valor y datos en hex y asigna un tipo simple (deploy, transferencias nativas y llamadas ERC20 basicas).
+Herramienta en Go que obtiene el ultimo bloque de Ethereum mainnet via el endpoint RPC que indiques y clasifica cada transaccion. Imprime hash, destino anotado, valor, datos en hex y un tipo detectado; con `-with-logs` puede resolver eventos ERC20/721 usando recibos.
 
 ## Requisitos
 - Go 1.24+
-- Acceso a un endpoint RPC de Ethereum mainnet. El codigo usa Infura con el project id que hoy esta codificado en `core/block_getter.go`.
+- Endpoint RPC de Ethereum mainnet (Infura, Alchemy, nodo propio, etc). Para `-with-logs` se necesitan recibos (`eth_getTransactionReceipt`).
 
-## Configuracion rapida
-- Actualiza la URL RPC en `core/block_getter.go` (llamada a `ethclient.Dial`) con tu endpoint. Si prefieres no exponer el project id, cambialo para leer una variable de entorno antes de compilar.
+## Uso rapido
+1. Ejecuta la ayuda con `go run . -h` (si lo corres sin parametros tambien se muestra).
+2. Lanza la clasificacion con `go run . -url https://mainnet.infura.io/v3/<project-id>`.
+3. Agrega `-with-logs` si quieres traer recibos/logs y detectar transferencias/aprobaciones ERC20 o ERC721.
 
-## Uso
-- Ejecuta `go run .` para traer el ultimo bloque y listar sus transacciones clasificadas.
-- La salida por cada transaccion incluye hash, direccion destino con etiqueta cuando aplica, valor, datos en hex y el tipo detectado. Ejemplo de formato:
+### Flags
+- `-url` (obligatorio): URL del endpoint RPC.
+- `-with-logs` (opcional): solicita recibos/logs para enriquecer la clasificacion de llamadas a contratos (mas llamadas RPC).
+- `-h` / `--help`: imprime el mensaje de ayuda.
 
-```text
-Tx Hash:  0x...
-Tx To:  0xdac17f... (USDT Contract)
-Tx Value:  0
-Tx Data:  a9059cbb...
-Tx Type: ERC_TRANSFER
-----------------
-```
+### Salida
+Se muestra numero y hash del bloque y, por cada transaccion, hash, destino (con etiqueta si esta en `internal/infrastructure/labeler/static_labeler.go`), valor en wei/ETH, datos en hex, tipo detectado y selector de funcion si aplica.
 
 ## Tipos detectados
-- `DEPLOY`: `tx.To()` es nil, despliegue de contrato.
-- `TRANSFER`: sin datos (`len(data)==0`) y valor mayor a cero.
-- `ERC_TRANSFER`: selector `a9059cbb` (transfer de ERC20).
-- `ERC_APPROVE`: selector `095ea7b3`.
-- `ERC_TRANSFER_FROM`: selector `23b872dd`.
-- `UNKNOWN`: cualquier otro caso. Se imprimen igual los detalles para poder inspeccionarlos.
-
-Ademas `core/addr_classifier.go` etiqueta direcciones conocidas; hoy reconoce el contrato de USDT.
+- `DEPLOY`
+- `TRANSFER`
+- `CONTRACT_CALL`
+- `ERC20_TRANSFER`
+- `ERC20_APPROVE`
+- `ERC20_TRANSFER_FROM`
+- `ERC721_TRANSFER`
+- `ERC721_APPROVAL`
+- `ERC721_APPROVAL_FOR_ALL`
+- `UNKNOWN`
 
 ## Estructura
-- `main.go`: orquestacion; obtiene un bloque y recorre las transacciones.
-- `core/block_getter.go`: conexion al nodo y descarga del bloque mas reciente.
-- `core/classifier.go`: reglas basicas de clasificacion por selector y tipo de transaccion.
-- `core/addr_classifier.go`: etiquetas de direcciones.
-
-## Limitaciones y posibles mejoras
-- El endpoint RPC esta hardcodeado y no hay manejo de variables de entorno ni reintentos.
-- Solo se cubren tres metodos ERC20 comunes; no se decodifican parametros ni se detectan otros protocolos.
-- No hay pruebas automatizadas ni manejo de logging estructurado.
+- `main.go`: parseo de flags, construccion de dependencias y ejecucion de la clasificacion.
+- `internal/infrastructure/ethereum/block_reader.go`: conexion RPC y lectura del bloque mas reciente (con o sin logs).
+- `internal/usecase/classify_block.go`: orquesta los clasificadores y resolvedores de logs.
+- `internal/infrastructure/classifier/ethereum_classifiers.go`: reglas para tipos base y deteccion ERC20/721 via logs.
+- `internal/interface/cli/presenter.go`: imprime los resultados en la consola.
+- `internal/infrastructure/labeler/static_labeler.go`: etiquetas estaticas para contratos conocidos (USDT, USDC, DAI, WETH).
