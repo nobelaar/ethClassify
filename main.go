@@ -1,31 +1,51 @@
 package main
 
 import (
-	"ethClassify/core"
+	"context"
 	"flag"
-	"fmt"
-	"os"
+	"log"
+
+	"ethClassify/internal/domain"
+	"ethClassify/internal/infrastructure/classifier"
+	"ethClassify/internal/infrastructure/ethereum"
+	"ethClassify/internal/infrastructure/labeler"
+	"ethClassify/internal/interface/cli"
+	"ethClassify/internal/usecase"
 )
 
 func main() {
 	url := flag.String("url", "", "rpc url raw link")
 	flag.Parse()
 	if *url == "" {
-		fmt.Println("rpc-url is required")
-		os.Exit(1)
-	}
-	block, err := core.GetBlock(*url)
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		log.Fatal("rpc-url is required")
 	}
 
-	for _, tx := range block.Transactions() {
-		txType, err := core.Classify(tx)
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
-		fmt.Printf("Tx Type: %s\n\n----------------\n", txType)
+	reader, err := ethereum.NewBlockReader(*url)
+	if err != nil {
+		log.Fatalf("failed to create block reader: %v", err)
 	}
+
+	addrLabeler := labeler.NewStaticLabeler(map[string]string{
+		"0xdac17f958d2ee523a2206206994597c13d831ec7": "USDT Contract",
+	})
+
+	classifiers := []domain.TxClassifier{
+		classifier.DeployClassifier{},
+		classifier.NativeTransferClassifier{},
+		classifier.ERC20Classifier{},
+	}
+
+	uc := usecase.ClassifyBlock{
+		Reader:      reader,
+		Classifiers: classifiers,
+		Labeler:     addrLabeler,
+	}
+
+	ctx := context.Background()
+	result, err := uc.Execute(ctx)
+	if err != nil {
+		log.Fatalf("failed to classify block: %v", err)
+	}
+
+	cli.PrintBlockResult(result)
 }
