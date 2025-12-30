@@ -8,9 +8,10 @@ import (
 )
 
 type ClassifyBlock struct {
-	Reader      domain.BlockReader
-	Classifiers []domain.TxClassifier
-	Labeler     domain.AddressLabeler
+	Reader       domain.BlockReader
+	Classifiers  []domain.TxClassifier
+	LogResolvers []domain.TxLogResolver
+	Labeler      domain.AddressLabeler
 }
 
 func (uc ClassifyBlock) Execute(ctx context.Context) (domain.BlockResult, error) {
@@ -41,18 +42,27 @@ func (uc ClassifyBlock) Execute(ctx context.Context) (domain.BlockResult, error)
 			}
 			result.Tx = tx
 			result.ToLabel = labeled
-			results = append(results, result)
 			classified = true
+			result, err = uc.resolveLogs(ctx, tx, result)
+			if err != nil {
+				return domain.BlockResult{}, err
+			}
+			results = append(results, result)
 			break
 		}
 
 		if !classified {
-			results = append(results, domain.TxResult{
+			result := domain.TxResult{
 				Tx:       tx,
 				Type:     domain.ClassificationUnknown,
 				Selector: selectorHex(tx.Data),
 				ToLabel:  labeled,
-			})
+			}
+			result, err = uc.resolveLogs(ctx, tx, result)
+			if err != nil {
+				return domain.BlockResult{}, err
+			}
+			results = append(results, result)
 		}
 	}
 
@@ -67,6 +77,41 @@ func (uc ClassifyBlock) label(addr *string) string {
 		return ""
 	}
 	return uc.Labeler.Label(*addr)
+}
+
+func (uc ClassifyBlock) resolveLogs(ctx context.Context, tx domain.Tx, current domain.TxResult) (domain.TxResult, error) {
+	if len(uc.LogResolvers) == 0 {
+		return current, nil
+	}
+
+	if current.Type != domain.ClassificationContractCall && current.Type != domain.ClassificationUnknown {
+		return current, nil
+	}
+
+	if len(tx.Logs) == 0 {
+		return current, nil
+	}
+
+	resolved := current
+	for _, resolver := range uc.LogResolvers {
+		next, ok, err := resolver.Resolve(ctx, tx, resolved)
+		if err != nil {
+			return domain.TxResult{}, err
+		}
+		if !ok {
+			continue
+		}
+		if next.ToLabel == "" {
+			next.ToLabel = resolved.ToLabel
+		}
+		if next.Tx.Hash == "" {
+			next.Tx = tx
+		}
+		resolved = next
+		break
+	}
+
+	return resolved, nil
 }
 
 func selectorHex(data []byte) string {

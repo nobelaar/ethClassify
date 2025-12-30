@@ -16,17 +16,22 @@ type Tx struct {
 	To    *string
 	Value *big.Int
 	Data  []byte
+	Logs  []Log
 }
 
 type ClassificationType string
 
 const (
-	ClassificationDeploy            ClassificationType = "DEPLOY"
-	ClassificationTransfer          ClassificationType = "TRANSFER"
-	ClassificationERC20Transfer     ClassificationType = "ERC20_TRANSFER"
-	ClassificationERC20Approve      ClassificationType = "ERC20_APPROVE"
-	ClassificationERC20TransferFrom ClassificationType = "ERC20_TRANSFER_FROM"
-	ClassificationUnknown           ClassificationType = "UNKNOWN"
+	ClassificationDeploy               ClassificationType = "DEPLOY"
+	ClassificationTransfer             ClassificationType = "TRANSFER"
+	ClassificationContractCall         ClassificationType = "CONTRACT_CALL"
+	ClassificationERC20Transfer        ClassificationType = "ERC20_TRANSFER"
+	ClassificationERC20Approve         ClassificationType = "ERC20_APPROVE"
+	ClassificationERC20TransferFrom    ClassificationType = "ERC20_TRANSFER_FROM"
+	ClassificationERC721Transfer       ClassificationType = "ERC721_TRANSFER"
+	ClassificationERC721Approval       ClassificationType = "ERC721_APPROVAL"
+	ClassificationERC721ApprovalForAll ClassificationType = "ERC721_APPROVAL_FOR_ALL"
+	ClassificationUnknown              ClassificationType = "UNKNOWN"
 )
 
 type TxResult struct {
@@ -52,4 +57,14 @@ type AddressLabeler interface {
 
 type TxClassifier interface {
 	Classify(ctx context.Context, tx Tx) (TxResult, bool, error)
+}
+
+type TxLogResolver interface {
+	Resolve(ctx context.Context, tx Tx, current TxResult) (TxResult, bool, error)
+}
+
+type Log struct {
+	Address string
+	Topics  []string
+	Data    []byte
 }

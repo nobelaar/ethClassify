@@ -32,13 +32,19 @@ func main() {
 	classifiers := []domain.TxClassifier{
 		classifier.DeployClassifier{},
 		classifier.NativeTransferClassifier{},
-		classifier.ERC20Classifier{},
+		classifier.ContractCallClassifier{},
+	}
+
+	resolvers := []domain.TxLogResolver{
+		classifier.ERC721LogResolver{},
+		classifier.ERC20LogResolver{},
 	}
 
 	uc := usecase.ClassifyBlock{
-		Reader:      reader,
-		Classifiers: classifiers,
-		Labeler:     addrLabeler,
+		Reader:       reader,
+		Classifiers:  classifiers,
+		LogResolvers: resolvers,
+		Labeler:      addrLabeler,
 	}
 
 	ctx := context.Background()
