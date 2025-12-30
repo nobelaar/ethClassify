@@ -7,8 +7,8 @@ Herramienta en Go que obtiene el ultimo bloque de Ethereum mainnet via el endpoi
 - Endpoint RPC de Ethereum mainnet (Infura, Alchemy, nodo propio, etc). Para `-with-logs` se necesitan recibos (`eth_getTransactionReceipt`).
 
 ## Uso rapido
-1. Ejecuta la ayuda con `go run . -h` (si lo corres sin parametros tambien se muestra).
-2. Lanza la clasificacion con `go run . -url https://mainnet.infura.io/v3/<project-id>`.
+1. Compila ejecutando `go build main.go`
+2. Lanza la clasificacion con `./main -url https://mainnet.infura.io/v3/<project-id>`.
 3. Agrega `-with-logs` si quieres traer recibos/logs y detectar transferencias/aprobaciones ERC20 o ERC721.
 
 ### Flags
