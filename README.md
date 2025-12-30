@@ -23,6 +23,8 @@ Se muestra numero y hash del bloque y, por cada transaccion, hash, destino (con 
 - `DEPLOY`
 - `TRANSFER`
 - `CONTRACT_CALL`
+- `DEX_SWAP` (Uniswap V2/V3 via logs)
+- `SANDWICH_SUSPECT` (heurística simple sobre swaps consecutivos en el mismo pool)
 - `ERC20_TRANSFER`
 - `ERC20_APPROVE`
 - `ERC20_TRANSFER_FROM`

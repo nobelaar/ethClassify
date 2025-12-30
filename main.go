@@ -62,6 +62,7 @@ func main() {
 	var resolvers []domain.TxLogResolver
 	if *withLogs {
 		resolvers = []domain.TxLogResolver{
+			classifier.DexSwapLogResolver{},
 			classifier.ERC721LogResolver{},
 			classifier.ERC20LogResolver{},
 		}

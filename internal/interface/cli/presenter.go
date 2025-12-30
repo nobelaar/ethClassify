@@ -2,6 +2,7 @@ package cli
 
 import (
 	"fmt"
+	"math/big"
 
 	"ethClassify/internal/domain"
 	"ethClassify/utils"
@@ -31,6 +32,13 @@ func PrintBlockResult(result domain.BlockResult) {
 		fmt.Printf("Tx Value: %s\n", value)
 		fmt.Printf("Tx Data: %x\n", tx.Tx.Data)
 		fmt.Printf("Classification: %s\n", tx.Type)
+		if tx.Swap != nil {
+			fmt.Printf("Swap: dex=%s pair=%s sender=%s recipient=%s a0(in/out)=%s/%s a1(in/out)=%s/%s\n",
+				tx.Swap.Dex, tx.Swap.Pair, tx.Swap.Sender, tx.Swap.Recipient,
+				formatBigInt(tx.Swap.Amount0In), formatBigInt(tx.Swap.Amount0Out),
+				formatBigInt(tx.Swap.Amount1In), formatBigInt(tx.Swap.Amount1Out),
+			)
+		}
 		if tx.Selector != "" {
 			fmt.Printf("Function Selector: %s\n", tx.Selector)
 		}
@@ -39,4 +47,11 @@ func PrintBlockResult(result domain.BlockResult) {
 		}
 		fmt.Println("----------------")
 	}
+}
+
+func formatBigInt(v *big.Int) string {
+	if v == nil {
+		return "0"
+	}
+	return v.String()
 }

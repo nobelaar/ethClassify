@@ -25,6 +25,8 @@ const (
 	ClassificationDeploy               ClassificationType = "DEPLOY"
 	ClassificationTransfer             ClassificationType = "TRANSFER"
 	ClassificationContractCall         ClassificationType = "CONTRACT_CALL"
+	ClassificationDexSwap              ClassificationType = "DEX_SWAP"
+	ClassificationSandwichSuspect      ClassificationType = "SANDWICH_SUSPECT"
 	ClassificationERC20Transfer        ClassificationType = "ERC20_TRANSFER"
 	ClassificationERC20Approve         ClassificationType = "ERC20_APPROVE"
 	ClassificationERC20TransferFrom    ClassificationType = "ERC20_TRANSFER_FROM"
@@ -39,12 +41,24 @@ type TxResult struct {
 	Type     ClassificationType
 	Selector string
 	ToLabel  string
+	Swap     *SwapInfo
 	Details  string
 }
 
 type BlockResult struct {
 	Block   Block
 	Results []TxResult
+}
+
+type SwapInfo struct {
+	Dex        string
+	Pair       string
+	Sender     string
+	Recipient  string
+	Amount0In  *big.Int
+	Amount1In  *big.Int
+	Amount0Out *big.Int
+	Amount1Out *big.Int
 }
 
 type BlockReader interface {
