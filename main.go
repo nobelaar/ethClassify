@@ -15,12 +15,13 @@ import (
 
 func main() {
 	url := flag.String("url", "", "rpc url raw link")
+	withLogs := flag.Bool("with-logs", false, "use transaction receipts/logs for ERC-type classification (extra RPC calls)")
 	flag.Parse()
 	if *url == "" {
 		log.Fatal("rpc-url is required")
 	}
 
-	reader, err := ethereum.NewBlockReader(*url)
+	reader, err := ethereum.NewBlockReader(*url, *withLogs)
 	if err != nil {
 		log.Fatalf("failed to create block reader: %v", err)
 	}
@@ -38,9 +39,12 @@ func main() {
 		classifier.ContractCallClassifier{},
 	}
 
-	resolvers := []domain.TxLogResolver{
-		classifier.ERC721LogResolver{},
-		classifier.ERC20LogResolver{},
+	var resolvers []domain.TxLogResolver
+	if *withLogs {
+		resolvers = []domain.TxLogResolver{
+			classifier.ERC721LogResolver{},
+			classifier.ERC20LogResolver{},
+		}
 	}
 
 	uc := usecase.ClassifyBlock{

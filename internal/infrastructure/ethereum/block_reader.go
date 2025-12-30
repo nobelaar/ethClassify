@@ -12,15 +12,19 @@ import (
 )
 
 type BlockReader struct {
-	client *ethclient.Client
+	client   *ethclient.Client
+	withLogs bool
 }
 
-func NewBlockReader(rpcURL string) (*BlockReader, error) {
+func NewBlockReader(rpcURL string, withLogs bool) (*BlockReader, error) {
 	client, err := ethclient.Dial(rpcURL)
 	if err != nil {
 		return nil, fmt.Errorf("connect rpc: %w", err)
 	}
-	return &BlockReader{client: client}, nil
+	return &BlockReader{
+		client:   client,
+		withLogs: withLogs,
+	}, nil
 }
 
 func (r *BlockReader) LatestBlock(ctx context.Context) (domain.Block, error) {
@@ -32,18 +36,22 @@ func (r *BlockReader) LatestBlock(ctx context.Context) (domain.Block, error) {
 		return domain.Block{}, fmt.Errorf("fetch latest block: %w", err)
 	}
 
-	return convertBlock(ctx, r.client, block)
+	return convertBlock(ctx, r.client, r.withLogs, block)
 }
 
-func convertBlock(ctx context.Context, client *ethclient.Client, block *types.Block) (domain.Block, error) {
+func convertBlock(ctx context.Context, client *ethclient.Client, withLogs bool, block *types.Block) (domain.Block, error) {
 	txns := block.Transactions()
 	out := make([]domain.Tx, 0, len(txns))
 	for _, tx := range txns {
-		receipt, err := client.TransactionReceipt(ctx, tx.Hash())
-		if err != nil {
-			return domain.Block{}, fmt.Errorf("fetch receipt for tx %s: %w", tx.Hash(), err)
+		if withLogs {
+			receipt, err := client.TransactionReceipt(ctx, tx.Hash())
+			if err != nil {
+				return domain.Block{}, fmt.Errorf("fetch receipt for tx %s: %w", tx.Hash(), err)
+			}
+			out = append(out, convertTx(tx, receipt))
+			continue
 		}
-		out = append(out, convertTx(tx, receipt))
+		out = append(out, convertTxNoLogs(tx))
 	}
 
 	return domain.Block{
@@ -79,5 +87,21 @@ func convertTx(tx *types.Transaction, receipt *types.Receipt) domain.Tx {
 		Value: new(big.Int).Set(tx.Value()),
 		Data:  append([]byte(nil), tx.Data()...),
 		Logs:  logs,
+	}
+}
+
+func convertTxNoLogs(tx *types.Transaction) domain.Tx {
+	var toStr *string
+	if tx.To() != nil {
+		addr := tx.To().Hex()
+		toStr = &addr
+	}
+
+	return domain.Tx{
+		Hash:  tx.Hash().Hex(),
+		To:    toStr,
+		Value: new(big.Int).Set(tx.Value()),
+		Data:  append([]byte(nil), tx.Data()...),
+		Logs:  nil,
 	}
 }
